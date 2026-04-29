@@ -118,7 +118,7 @@ try:
             st.plotly_chart(fig_pie, use_container_width=True)
 
         with col2:
-            st.subheader("タイプ別 実績（広告売上）")
+            st.subheader("タイプ別 実績")
             fig_bar = go.Figure()
             fig_bar.add_trace(go.Bar(
                 x=type_summary['タイプ'], y=type_summary['広告売上'], marker_color='#FF9900',
@@ -129,19 +129,27 @@ try:
                                   xaxis=dict(showline=True, linecolor='#d5d9d9'), yaxis=dict(showgrid=True, gridcolor='#F3F3F3', tickformat=','))
             st.plotly_chart(fig_bar, use_container_width=True)
     else:
-        st.subheader("タイプ別 実績比較（広告売上）")
-        sum_a = df_a.groupby('タイプ')['広告売上'].sum().reset_index()
-        sum_b = df_b.groupby('タイプ')['広告売上'].sum().reset_index()
-        sum_a['期間'] = month_a
-        sum_b['期間'] = month_b
+        # 比較モードのグラフ：広告費と広告売上の2画面構成
+        cg1, cg2 = st.columns(2)
+        
+        sum_a = df_a.groupby('タイプ').agg({'広告売上': 'sum', '広告費': 'sum'}).reset_index()
+        sum_b = df_b.groupby('タイプ').agg({'広告売上': 'sum', '広告費': 'sum'}).reset_index()
+        sum_a['期間'], sum_b['期間'] = month_a, month_b
         compare_df = pd.concat([sum_a, sum_b])
 
-        # エラー箇所を修正: color_discrete_map を使用
-        fig_compare = px.bar(compare_df, x='タイプ', y='広告売上', color='期間', barmode='group',
-                             color_discrete_map={month_a: '#FF9900', month_b: '#232F3E'},
-                             text_auto=',.0f')
-        fig_compare.update_layout(plot_bgcolor='white', font_family="Inter", margin=dict(t=40, b=20))
-        st.plotly_chart(fig_compare, use_container_width=True)
+        with cg1:
+            st.subheader("タイプ別 広告費比較")
+            fig_sp = px.bar(compare_df, x='タイプ', y='広告費', color='期間', barmode='group',
+                            color_discrete_map={month_a: '#37475A', month_b: '#A9A9A9'}, text_auto=',.0f')
+            fig_sp.update_layout(plot_bgcolor='white', font_family="Inter", margin=dict(t=40, b=20), legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
+            st.plotly_chart(fig_sp, use_container_width=True)
+
+        with cg2:
+            st.subheader("タイプ別 実績比較")
+            fig_sa = px.bar(compare_df, x='タイプ', y='広告売上', color='期間', barmode='group',
+                            color_discrete_map={month_a: '#FF9900', month_b: '#232F3E'}, text_auto=',.0f')
+            fig_sa.update_layout(plot_bgcolor='white', font_family="Inter", margin=dict(t=40, b=20), legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
+            st.plotly_chart(fig_sa, use_container_width=True)
 
     # --- 実績テーブル ---
     if view_mode == "通常モード":
@@ -153,7 +161,6 @@ try:
         type_summary['ACOS'] = (type_summary['広告費'] / type_summary['広告売上'] * 100).fillna(0)
         table_data = type_summary[['タイプ', 'インプレッション', 'クリック数', 'CTR', 'CPC', '広告費', '注文', '広告売上', 'ROAS', 'CV率', 'ACOS']]
         
-        # フォーマット適用
         st.dataframe(
             table_data.style.format({
                 'インプレッション': '{:,.0f}', 'クリック数': '{:,.0f}', 'CTR': '{:.2f}%',
@@ -169,31 +176,39 @@ try:
                 'インプレッション': 'sum', 'クリック数': 'sum', '広告費': 'sum', '注文': 'sum', '広告売上': 'sum'
             })
         
-        sum_a = get_summary(df_a)
-        sum_b = get_summary(df_b)
+        sum_a, sum_b = get_summary(df_a), get_summary(df_b)
         diff = sum_a - sum_b
         
-        compare_table = []
+        # 視認性を上げたHTMLスタイルの比較テーブル
+        def format_diff(val, is_currency=False, is_percent=False):
+            color = "#d93025" if val > 0 else "#1a73e8" # ポジティブな伸びは赤(Amazonスタイル)
+            sign = "+" if val >= 0 else ""
+            fmt = f"{val:,.1f}" if is_percent else f"{val:,.0f}"
+            prefix = "¥" if is_currency else ""
+            suffix = "%" if is_percent else ""
+            return f'<br><span style="color:{color}; font-size:0.85em; font-weight:bold;">({sign}{prefix}{fmt}{suffix})</span>'
+
+        compare_data = []
         for t in sum_a.index:
             row = {'タイプ': t}
-            for col in ['インプレッション', 'クリック数', '広告費', '注文', '広告売上']:
-                val_a = sum_a.loc[t, col]
-                val_diff = diff.loc[t, col]
-                prefix = "¥" if "売上" in col or "費" in col else ""
-                row[col] = f"{prefix}{val_a:,.0f}\n({'+' if val_diff>=0 else ''}{val_diff:,.0f})"
+            row['インプレッション'] = f"{sum_a.loc[t, 'インプレッション']:,.0f}" + format_diff(diff.loc[t, 'インプレッション'])
+            row['クリック数'] = f"{sum_a.loc[t, 'クリック数']:,.0f}" + format_diff(diff.loc[t, 'クリック数'])
+            row['広告費'] = f"¥{sum_a.loc[t, '広告費']:,.0f}" + format_diff(diff.loc[t, '広告費'], is_currency=True)
+            row['注文'] = f"{sum_a.loc[t, '注文']:,.0f}" + format_diff(diff.loc[t, '注文'])
+            row['広告売上'] = f"¥{sum_a.loc[t, '広告売上']:,.0f}" + format_diff(diff.loc[t, '広告売上'], is_currency=True)
             
-            # ROAS / ACOS の計算
             ra = (sum_a.loc[t, '広告売上'] / sum_a.loc[t, '広告費'] * 100) if sum_a.loc[t, '広告費'] > 0 else 0
             rb = (sum_b.loc[t, '広告売上'] / sum_b.loc[t, '広告費'] * 100) if sum_b.loc[t, '広告費'] > 0 else 0
-            row['ROAS'] = f"{ra:.0f}%\n({ra - rb:+.1f}%)"
+            row['ROAS'] = f"{ra:.0f}%" + format_diff(ra - rb, is_percent=True)
             
-            aa = (sum_a.loc[t, '広告費'] / sum_a.loc[t, '広告売上'] * 100) if sum_a.loc[t, '広告売上'] > 0 else 0
-            ab = (sum_b.loc[t, '広告費'] / sum_b.loc[t, '広告売上'] * 100) if sum_b.loc[t, '広告売上'] > 0 else 0
-            row['ACOS'] = f"{aa:.1f}%\n({aa - ab:+.1f}%)"
-            
-            compare_table.append(row)
+            compare_data.append(row)
         
-        st.dataframe(pd.DataFrame(compare_table), use_container_width=True, hide_index=True)
+        # HTMLを表示するためにカラム設定
+        st.write(
+            pd.DataFrame(compare_data).to_html(escape=False, index=False), 
+            unsafe_allow_html=True
+        )
+        st.markdown("<br>", unsafe_allow_html=True)
 
     # --- 月別推移 ---
     st.markdown("---")
