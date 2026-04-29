@@ -8,7 +8,7 @@ import plotly.express as px
 # 1. ページ設定
 st.set_page_config(page_title="Amazon Ads Analytics", layout="wide")
 
-# 2. デザイン修正（チップデザインとテーブルの統一感）
+# 2. デザイン修正（margin/padding設定を元に戻し、厳守）
 st.markdown("""
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
@@ -34,37 +34,43 @@ div[data-baseweb="select"] * { color: #131921 !important; }
 div[data-testid="stMetricValue"] { color: #131921 !important; font-weight: 800 !important; font-family: 'Inter', sans-serif !important; }
 h1, h2, h3 { color: #131921 !important; font-weight: 800 !important; font-family: 'Inter', sans-serif !important; }
 
-/* 比較テーブル用デザイン（Streamlitの標準表に擬態） */
-.comparison-table {
+/* ページ全体の余白設定を初期状態に固定 */
+.st-emotion-cache-zy6yx3 {padding-top: 1rem !important;padding-bottom: 3rem !important;}
+.st-emotion-cache-qmp9ai {visibility: visible;}
+.st-emotion-cache-1r1cntt {padding-top: 1rem;}
+.st-emotion-cache-10p9htt {display: none;}
+
+/* 比較用テーブル内のデザイン（ページ全体の余白に影響しないようスコープを限定） */
+.custom-comp-table {
     width: 100%;
     border-collapse: collapse;
-    margin: 10px 0;
-    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    margin-bottom: 2rem;
 }
-.comparison-table th {
+.custom-comp-table th {
     background-color: #f8f9fb;
-    color: #31333f;
-    text-align: left;
-    padding: 8px 12px;
     border: 1px solid #e6e9ef;
+    padding: 8px 12px;
+    text-align: left;
+    font-size: 14px;
     font-weight: 600;
 }
-.comparison-table td {
-    padding: 10px 12px;
+.custom-comp-table td {
     border: 1px solid #e6e9ef;
-    color: #131921;
+    padding: 10px 12px;
+    font-size: 14px;
     vertical-align: middle;
 }
-.delta-chip {
+.delta-tag {
     display: inline-block;
     padding: 2px 8px;
     border-radius: 12px;
     font-size: 11px;
     font-weight: 700;
-    margin-left: 6px;
+    margin-left: 8px;
 }
-.chip-green { background-color: #e6f4ea; color: #1e7e34; }
-.chip-red { background-color: #fce8e6; color: #d93025; }
+.tag-up { background-color: #e6f4ea; color: #1e7e34; }
+.tag-down { background-color: #fce8e6; color: #d93025; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -74,17 +80,13 @@ def load_data(url):
     res.raise_for_status()
     return io.BytesIO(res.content)
 
-def format_delta_chip(diff, is_cost=False, prefix=""):
-    if diff == 0: return f'<span class="delta-chip" style="background:#f0f2f6;color:#5f6368;">(±0)</span>'
-    # 広告費やACOSは増えると赤、その他は増えると緑
-    is_positive = diff > 0
-    if is_cost:
-        status = "chip-red" if is_positive else "chip-green"
-    else:
-        status = "chip-green" if is_positive else "chip-red"
-    sign = "+" if is_positive else ""
-    val_str = f"{diff:,.0f}" if isinstance(diff, (int, float)) else str(diff)
-    return f'<span class="delta-chip {status}">{sign}{prefix}{val_str}</span>'
+def get_tag(diff, is_cost=False, pre=""):
+    if diff == 0: return '<span class="delta-tag" style="background:#f1f3f4;color:#5f6368;">±0</span>'
+    is_plus = diff > 0
+    # 広告費は増えると赤、その他は増えると緑
+    cls = "tag-down" if (is_plus if is_cost else not is_plus) else "tag-up"
+    sign = "+" if is_plus else ""
+    return f'<span class="delta-tag {cls}">{sign}{pre}{diff:,.0f}</span>'
 
 try:
     df_ads = pd.read_excel(load_data("https://gigaplus.makeshop.jp/aimedia/data/ads.xlsx"))
@@ -95,6 +97,7 @@ try:
     df_ads['日付_dt'] = pd.to_datetime(df_ads['日付'], format='%Y年%m月', errors='coerce')
     df_ads['年月'] = df_ads['日付_dt'].dt.strftime('%Y-%m')
 
+    # --- サイドバー ---
     st.sidebar.markdown('<h2>Amazon Ads Analytics</h2>', unsafe_allow_html=True)
     st.sidebar.link_button("売上実績へ切り替える", "https://amazon-sales-app.streamlit.app/")
     st.sidebar.markdown("---")
@@ -118,11 +121,11 @@ try:
         st.subheader(f"{target_month} タイプ別実績詳細")
         st.dataframe(type_sum.style.format({'インプレッション':'{:,.0f}','クリック数':'{:,.0f}','広告費':'¥{:,.0f}','注文':'{:,.0f}','広告売上':'¥{:,.0f}'}), use_container_width=True, hide_index=True)
 
-        col1, col2 = st.columns(2)
-        with col1:
+        c1, c2 = st.columns(2)
+        with c1:
             st.subheader("タイプ別 広告費比率")
             st.plotly_chart(px.pie(type_sum, values='広告費', names='タイプ', hole=0.4, color_discrete_sequence=['#232F3E', '#FF9900', '#37475A', '#A9A9A9']), use_container_width=True)
-        with col2:
+        with c2:
             st.subheader("タイプ別 実績")
             st.plotly_chart(px.bar(type_sum, x='タイプ', y='広告売上', text_auto=',.0f', color_discrete_sequence=['#FF9900']).update_layout(plot_bgcolor='white'), use_container_width=True)
 
@@ -132,54 +135,49 @@ try:
         st.title(f"Comparison: {month_a} vs {month_b}")
         
         df_a, df_b = df_ads[df_ads['年月'] == month_a].copy(), df_ads[df_ads['年月'] == month_b].copy()
-        sum_a, sum_b = df_a.sum(numeric_only=True), df_b.sum(numeric_only=True)
+        s_a, s_b = df_a.sum(numeric_only=True), df_b.sum(numeric_only=True)
         
         m1, m2, m3, m4 = st.columns(4)
-        m1.metric("総広告費", f"¥{int(sum_a['広告費']):,}", delta=f"¥{int(sum_a['広告費'] - sum_b['広告費']):,}", delta_color="inverse")
-        m2.metric("総広告売上", f"¥{int(sum_a['広告売上']):,}", delta=f"¥{int(sum_a['広告売上'] - sum_b['広告売上']):,}")
-        m3.metric("ROAS", f"{(sum_a['広告売上']/sum_a['広告費']*100):.0f}%", delta=f"{(sum_a['広告売上']/sum_a['広告費']*100)-(sum_b['広告売上']/sum_b['広告費']*100):.1f}%")
-        m4.metric("ACOS", f"{(sum_a['広告費']/sum_a['広告売上']*100):.1f}%", delta=f"{(sum_a['広告費']/sum_a['広告売上']*100)-(sum_b['広告費']/sum_b['広告売上']*100):.1f}%", delta_color="inverse")
+        m1.metric("総広告費", f"¥{int(s_a['広告費']):,}", delta=f"¥{int(s_a['広告費']-s_b['広告費']):,}", delta_color="inverse")
+        m2.metric("総広告売上", f"¥{int(s_a['広告売上']):,}", delta=f"¥{int(s_a['広告売上']-s_b['広告売上']):,}")
+        m3.metric("ROAS", f"{(s_a['広告売上']/s_a['広告費']*100):.0f}%", delta=f"{(s_a['広告売上']/s_a['広告費']*100)-(s_b['広告売上']/s_b['広告費']*100):.1f}%")
+        m4.metric("ACOS", f"{(s_a['広告費']/s_a['広告売上']*100):.1f}%", delta=f"{(s_a['広告費']/s_a['広告売上']*100)-(s_b['広告費']/s_b['広告売上']*100):.1f}%", delta_color="inverse")
 
         # 1. 総合実績テーブル
         st.subheader("広告総合実績比較")
-        comp_summary = pd.DataFrame([sum_a, sum_b], index=[month_a, month_b]).reset_index().rename(columns={'index':'年月'})
-        st.dataframe(comp_summary.style.format({'インプレッション':'{:,.0f}','クリック数':'{:,.0f}','広告費':'¥{:,.0f}','注文':'{:,.0f}','広告売上':'¥{:,.0f}'}), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame([s_a, s_b], index=[month_a, month_b]).reset_index().rename(columns={'index':'年月'}).style.format({'インプレッション':'{:,.0f}','クリック数':'{:,.0f}','広告費':'¥{:,.0f}','注文':'{:,.0f}','広告売上':'¥{:,.0f}'}), use_container_width=True, hide_index=True)
 
-        # 2. タイプ別実績比較テーブル (HTMLによるチップデザイン適用)
+        # 2. タイプ別実績比較 (HTMLチップ)
         st.subheader(f"タイプ別実績比較 ({month_a} vs {month_b})")
         g_a, g_b = df_a.groupby('タイプ').sum(numeric_only=True), df_b.groupby('タイプ').sum(numeric_only=True)
         
-        html_table = '<table class="comparison-table"><tr><th>タイプ</th><th>インプレッション</th><th>クリック数</th><th>広告費</th><th>注文</th><th>広告売上</th><th>ROAS</th></tr>'
+        tbl = '<table class="custom-comp-table"><tr><th>タイプ</th><th>インプレッション</th><th>クリック数</th><th>広告費</th><th>注文</th><th>広告売上</th><th>ROAS</th></tr>'
         for t in g_a.index:
-            diff = g_a.loc[t] - g_b.loc[t]
-            roas_a = (g_a.loc[t,'広告売上']/g_a.loc[t,'広告費']*100) if g_a.loc[t,'広告費']>0 else 0
-            roas_b = (g_b.loc[t,'広告売上']/g_b.loc[t,'広告費']*100) if g_b.loc[t,'広告費']>0 else 0
-            
-            html_table += f'<tr><td>{t}</td>'
-            html_table += f'<td>{g_a.loc[t,"インプレッション"]:,.0f}{format_delta_chip(diff["インプレッション"])}</td>'
-            html_table += f'<td>{g_a.loc[t,"クリック数"]:,.0f}{format_delta_chip(diff["クリック数"])}</td>'
-            html_table += f'<td>¥{g_a.loc[t,"広告費"]:,.0f}{format_delta_chip(diff["広告費"], is_cost=True, prefix="¥")}</td>'
-            html_table += f'<td>{g_a.loc[t,"注文"]:,.0f}{format_delta_chip(diff["注文"])}</td>'
-            html_table += f'<td>¥{g_a.loc[t,"広告売上"]:,.0f}{format_delta_chip(diff["広告売上"], prefix="¥")}</td>'
-            html_table += f'<td>{roas_a:.0f}%<span class="delta-chip {"chip-green" if roas_a>=roas_b else "chip-red"}">{roas_a-roas_b:+.1f}%</span></td></tr>'
-        html_table += '</table>'
-        st.markdown(html_table, unsafe_allow_html=True)
+            d = g_a.loc[t] - g_b.loc[t]
+            ra = (g_a.loc[t,'広告売上']/g_a.loc[t,'広告費']*100) if g_a.loc[t,'広告費']>0 else 0
+            rb = (g_b.loc[t,'広告売上']/g_b.loc[t,'広告費']*100) if g_b.loc[t,'広告費']>0 else 0
+            tbl += f'<tr><td>{t}</td>'
+            tbl += f'<td>{g_a.loc[t,"インプレッション"]:,.0f}{get_tag(d["インプレッション"])}</td>'
+            tbl += f'<td>{g_a.loc[t,"クリック数"]:,.0f}{get_tag(d["クリック数"])}</td>'
+            tbl += f'<td>¥{g_a.loc[t,"広告費"]:,.0f}{get_tag(d["広告費"], True, "¥")}</td>'
+            tbl += f'<td>{g_a.loc[t,"注文"]:,.0f}{get_tag(d["注文"])}</td>'
+            tbl += f'<td>¥{g_a.loc[t,"広告売上"]:,.0f}{get_tag(d["広告売上"], False, "¥")}</td>'
+            tbl += f'<td>{ra:.0f}%<span class="delta-tag {"tag-up" if ra>=rb else "tag-down"}">{ra-rb:+.1f}%</span></td></tr>'
+        st.markdown(tbl + '</table>', unsafe_allow_html=True)
 
         # 3. グラフ
-        st.markdown("<br>", unsafe_allow_html=True)
         cg1, cg2 = st.columns(2)
-        compare_df = pd.concat([g_a.assign(期間=month_a), g_b.assign(期間=month_b)]).reset_index()
+        cdf = pd.concat([g_a.assign(期間=month_a), g_b.assign(期間=month_b)]).reset_index()
         with cg1:
             st.subheader("タイプ別 広告費比較")
-            st.plotly_chart(px.bar(compare_df, x='タイプ', y='広告費', color='期間', barmode='group', color_discrete_map={month_a:'#37475A', month_b:'#A9A9A9'}).update_layout(plot_bgcolor='white', legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)), use_container_width=True)
+            st.plotly_chart(px.bar(cdf, x='タイプ', y='広告費', color='期間', barmode='group', color_discrete_map={month_a:'#37475A', month_b:'#A9A9A9'}).update_layout(plot_bgcolor='white', legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)), use_container_width=True)
         with cg2:
             st.subheader("タイプ別 実績比較")
-            st.plotly_chart(px.bar(compare_df, x='タイプ', y='広告売上', color='期間', barmode='group', color_discrete_map={month_a:'#FF9900', month_b:'#232F3E'}).update_layout(plot_bgcolor='white', legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)), use_container_width=True)
+            st.plotly_chart(px.bar(cdf, x='タイプ', y='広告売上', color='期間', barmode='group', color_discrete_map={month_a:'#FF9900', month_b:'#232F3E'}).update_layout(plot_bgcolor='white', legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)), use_container_width=True)
 
     st.markdown("---")
     st.subheader("月別 広告総合実績推移 (All Metrics)")
-    trend = df_ads.groupby('年月').sum(numeric_only=True).sort_index(ascending=False).reset_index()
-    st.dataframe(trend.style.format({'インプレッション':'{:,.0f}','クリック数':'{:,.0f}','広告費':'¥{:,.0f}','注文':'{:,.0f}','広告売上':'¥{:,.0f}'}), use_container_width=True, hide_index=True)
+    st.dataframe(df_ads.groupby('年月').sum(numeric_only=True).sort_index(ascending=False).reset_index().style.format({'インプレッション':'{:,.0f}','クリック数':'{:,.0f}','広告費':'¥{:,.0f}','注文':'{:,.0f}','広告売上':'¥{:,.0f}'}), use_container_width=True, hide_index=True)
 
 except Exception as e:
     st.error(f"エラーが発生しました: {e}")
