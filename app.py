@@ -54,7 +54,7 @@ try:
     df_ads['年月'] = df_ads['日付_dt'].dt.strftime('%Y-%m')
 
     # --- サイドバー (絵文字を削除しFont Awesomeを適用) ---
-    st.sidebar.markdown('<h2><i class="fa-solid fa-chart-line"></i> Amazon Ads Analytics</h2>', unsafe_allow_html=True)
+    st.sidebar.markdown('<h2>Amazon Ads Analytics</h2>', unsafe_allow_html=True)
     # ボタン内の絵文字も削除
     st.sidebar.link_button("売上実績へ切り替える", "https://amazon-sales-app.streamlit.app/")
     st.sidebar.markdown("---")
