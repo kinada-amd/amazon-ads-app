@@ -8,27 +8,24 @@ import plotly.express as px
 # 1. ページ設定
 st.set_page_config(page_title="Amazon Ads Analytics", layout="wide")
 
-# 2. デザイン修正（バグ排除・フォント同期・アイコン刷新・絵文字排除）
+# 2. デザイン修正（バグ徹底排除・フォント同期・白背景固定）
 st.markdown("""
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap');
 
-/* ヘッダー・フッター・デプロイボタン等の非表示 */
 .stAppDeployButton, [data-testid="stStatusWidget"], footer, header, #MainMenu { 
     visibility: hidden !important; 
     display: none !important; 
 }
 div[data-testid="stDecoration"] { display: none !important; }
 
-/* メイン背景を白に、フォントをInterに固定 */
 html, body, [data-testid="stAppViewContainer"], .stApp {
     background-color: #FFFFFF !important;
     color: #131921 !important;
     font-family: 'Inter', sans-serif !important;
 }
 
-/* サイドバーのネイビー背景設定 */
 [data-testid="stSidebar"] { 
     background-color: #131921 !important; 
 }
@@ -36,12 +33,10 @@ html, body, [data-testid="stAppViewContainer"], .stApp {
     color: #FFFFFF !important; 
 }
 
-/* サイドバー内の入力フォームを黒文字に固定 */
 div[data-baseweb="select"] * { 
     color: #131921 !important; 
 }
 
-/* リンクボタンのデザイン */
 .stLinkButton a {
     background-color: #37475a !important;
     border: 1px solid #a2a6ac !important;
@@ -51,19 +46,21 @@ div[data-baseweb="select"] * {
     text-decoration: none !important;
 }
 
-/* 数値（Metric）と見出しのフォントをInterに固定 */
 div[data-testid="stMetricValue"] { 
     color: #131921 !important; 
     font-weight: 800 !important; 
     font-family: 'Inter', sans-serif !important; 
 }
-h1, h2, h3 { 
-    color: #131921 !important; 
-    font-weight: 800 !important; 
+
+h1, h2, h3, span, p, div { 
     font-family: 'Inter', sans-serif !important; 
 }
 
-/* 上部余白の調整 */
+h1, h2, h3 {
+    color: #131921 !important;
+    font-weight: 800 !important;
+}
+
 .st-emotion-cache-zy6yx3 {
     padding-top: 1rem !important;
     padding-bottom: 3rem !important;
@@ -86,17 +83,16 @@ try:
     df_ads['日付_dt'] = pd.to_datetime(df_ads['日付'], format='%Y年%m月', errors='coerce')
     df_ads['年月'] = df_ads['日付_dt'].dt.strftime('%Y-%m')
 
-    # --- サイドバー (絵文字を削除しFont Awesomeを適用) ---
-    st.sidebar.markdown('<h2>Amazon Ads Analytics</h2>', unsafe_allow_html=True)
-    # ボタン内の絵文字も削除
+    # --- サイドバー ---
+    st.sidebar.markdown('<h2><i class="fa-solid fa-chart-line"></i> Ads Analytics</h2>', unsafe_allow_html=True)
     st.sidebar.link_button("売上分析アプリへ移動", "https://amazon-sales-app.streamlit.app/")
     st.sidebar.markdown("---")
     
     all_months = sorted(df_ads['年月'].dropna().unique(), reverse=True)
-    # ラベルを「表示する期間を選択」に変更
     target_month = st.sidebar.selectbox("表示する期間を選択", all_months, index=0)
 
     # --- メインコンテンツ ---
+    # 指示通りタイトルを Advertising Summary: {年月} に固定
     st.title(f"Advertising Summary: {target_month}")
 
     df_month = df_ads[df_ads['年月'] == target_month].copy()
