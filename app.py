@@ -14,52 +14,46 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap');
 
-/* 1. デプロイボタンや余計なUIを排除 */
 .stAppDeployButton, [data-testid="stStatusWidget"], footer, header, #MainMenu { 
     visibility: hidden !important; 
     display: none !important; 
 }
 div[data-testid="stDecoration"] { display: none !important; }
 
-/* 2. メインエリア：背景白・文字黒・Interフォントに強制固定 */
-html, body, [data-testid="stAppViewContainer"], .stApp, [data-testid="inner-content-container"], [data-testid="stVerticalBlock"] {
+html, body, [data-testid="stAppViewContainer"], .stApp, [data-testid="stVerticalBlock"] {
     background-color: #FFFFFF !important;
     color: #131921 !important;
     font-family: 'Inter', sans-serif !important;
 }
 
-/* 3. サイドバー：背景ネイビー・文字白に固定 */
 [data-testid="stSidebar"] { 
     background-color: #131921 !important; 
 }
 [data-testid="stSidebar"] * { 
     color: #FFFFFF !important; 
-    font-family: 'Inter', sans-serif !important;
 }
 
-/* 4. サイドバー内のプルダウン（期間選択）のみ黒文字 */
 div[data-baseweb="select"] * { 
     color: #131921 !important; 
 }
 
-/* 5. グラフコンテナの背景を白に強制（ダークモード対策） */
 iframe[title="st.plotly_chart"], .js-plotly-plot, .plot-container {
     background-color: #FFFFFF !important;
 }
 
-/* 6. 指標(Metric)と見出しのスタイル固定 */
 div[data-testid="stMetricValue"] { 
     color: #131921 !important; 
     font-weight: 800 !important; 
 }
+
 h1, h2, h3, span, p, div { 
     color: #131921 !important; 
 }
+
 [data-testid="stSidebar"] h2, [data-testid="stSidebar"] p {
     color: #FFFFFF !important;
 }
 
-/* 7. リンクボタンのAmazon風スタイル */
 .stLinkButton a {
     background-color: #37475a !important;
     border: 1px solid #a2a6ac !important;
