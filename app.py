@@ -33,7 +33,9 @@ div[data-baseweb="select"] * { color: #131921 !important; }
 }
 div[data-testid="stMetricValue"] { color: #131921 !important; font-weight: 800 !important; font-family: 'Inter', sans-serif !important; }
 h1, h2, h3 { color: #131921 !important; font-weight: 800 !important; font-family: 'Inter', sans-serif !important; }
-.st-emotion-cache-zy6yx3 {padding-top: 1rem !important;}
+.st-emotion-cache-zy6yx3 {padding-top: 1rem !important;padding-bottom: 3rem !important;}
+.st-emotion-cache-qmp9ai { visibility: visible;}
+.st-emotion-cache-qmp9ai { visibility: visible;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -53,7 +55,7 @@ try:
     df_ads['年月'] = df_ads['日付_dt'].dt.strftime('%Y-%m')
 
     # --- サイドバー (絵文字を削除しFont Awesomeを適用) ---
-    st.sidebar.markdown('<h2><i class="fa-solid fa-chart-line"></i> Ads Analytics</h2>', unsafe_allow_html=True)
+    st.sidebar.markdown('<h2>Amazon Ads Analytics</h2>', unsafe_allow_html=True)
     # ボタン内の絵文字も削除
     st.sidebar.link_button("売上分析アプリへ移動", "https://amazon-sales-app.streamlit.app/")
     st.sidebar.markdown("---")
