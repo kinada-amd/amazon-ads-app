@@ -13,42 +13,17 @@ st.markdown("""
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap');
-
-/* 全体の非表示設定 */
-.stAppDeployButton, [data-testid="stStatusWidget"], footer, header, #MainMenu { 
-    visibility: hidden !important; 
-    display: none !important; 
-}
+.stAppDeployButton, [data-testid="stStatusWidget"], footer, header, #MainMenu { visibility: hidden !important; display: none !important; }
 div[data-testid="stDecoration"] { display: none !important; }
-
-/* メイン背景の白固定（全ての階層をカバー） */
 html, body, [data-testid="stAppViewContainer"], .stApp, [data-testid="stVerticalBlock"] {
     background-color: #FFFFFF !important;
     color: #131921 !important;
     font-family: 'Inter', sans-serif !important;
 }
-
-/* サイドバーの背景固定 */
-[data-testid="stSidebar"] { 
-    background-color: #131921 !important; 
-}
-
-/* サイドバー内のテキストを白に固定し、ホバー等の余計な挙動を抑圧 */
-[data-testid="stSidebar"] * { 
-    color: #FFFFFF !important; 
-}
-
-/* サイドバー内のセレクトボックスのみ黒文字 */
-div[data-baseweb="select"] * { 
-    color: #131921 !important; 
-}
-
-/* サイドバーの各要素にマウスを乗せた時に背景が変わるのを防止 */
-[data-testid="stSidebar"] [data-testid="stVerticalBlock"] > div:hover {
-    background-color: transparent !important;
-}
-
-/* リンクボタンのデザイン */
+[data-testid="stSidebar"] { background-color: #131921 !important; }
+[data-testid="stSidebar"] * { color: #FFFFFF !important; }
+div[data-baseweb="select"] * { color: #131921 !important; }
+[data-testid="stSidebar"] [data-testid="stVerticalBlock"] > div:hover { background-color: transparent !important; }
 .stLinkButton a {
     background-color: #37475a !important;
     border: 1px solid #a2a6ac !important;
@@ -57,26 +32,10 @@ div[data-baseweb="select"] * {
     font-weight: 700 !important;
     text-decoration: none !important;
 }
-
-/* 指標と見出しのフォント設定 */
-div[data-testid="stMetricValue"] { 
-    color: #131921 !important; 
-    font-weight: 800 !important; 
-    font-family: 'Inter', sans-serif !important; 
-}
-h1, h2, h3, span, p, div { 
-    font-family: 'Inter', sans-serif !important; 
-}
-h1, h2, h3 { 
-    color: #131921 !important; 
-    font-weight: 800 !important; 
-}
-
-/* コンテンツ上部の余白 */
-.st-emotion-cache-zy6yx3 {
-    padding-top: 1rem !important;
-    padding-bottom: 3rem !important;
-}
+div[data-testid="stMetricValue"] { color: #131921 !important; font-weight: 800 !important; font-family: 'Inter', sans-serif !important; }
+h1, h2, h3, span, p, div { font-family: 'Inter', sans-serif !important; }
+h1, h2, h3 { color: #131921 !important; font-weight: 800 !important; }
+.st-emotion-cache-zy6yx3 { padding-top: 1rem !important; padding-bottom: 3rem !important; }
 </style>
 """, unsafe_allow_html=True)
 
