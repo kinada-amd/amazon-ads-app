@@ -77,8 +77,9 @@ try:
         m4.metric("ACOS", f"{(total_sp/total_sa*100):.1f}%" if total_sa > 0 else "0.0%")
         display_df = df_month
     else:
-        month_a = st.sidebar.selectbox("比較期間 A (最新)", all_months, index=0)
-        month_b = st.sidebar.selectbox("比較期間 B (過去)", all_months, index=1 if len(all_months) > 1 else 0)
+        # 文言変更
+        month_a = st.sidebar.selectbox("比較期間 A", all_months, index=0)
+        month_b = st.sidebar.selectbox("比較期間 B", all_months, index=1 if len(all_months) > 1 else 0)
         
         st.title(f"Comparison: {month_a} vs {month_b}")
         df_a = df_ads[df_ads['年月'] == month_a].copy()
@@ -96,6 +97,28 @@ try:
         m2.metric("総広告売上", f"¥{int(sa_a):,}", delta=f"¥{int(sa_a - sa_b):,}")
         m3.metric("ROAS", f"{roas_a:.0f}%", delta=f"{roas_a - roas_b:.1f}%")
         m4.metric("ACOS", f"{acos_a:.1f}%", delta=f"{acos_a - acos_b:.1f}%", delta_color="inverse")
+        
+        # --- 比較モード専用：月別合計実績テーブルの追加 ---
+        st.subheader("広告総合実績比較")
+        summary_a = df_a.agg({'インプレッション':'sum','クリック数':'sum','広告費':'sum','注文':'sum','広告売上':'sum'})
+        summary_b = df_b.agg({'インプレッション':'sum','クリック数':'sum','広告費':'sum','注文':'sum','広告売上':'sum'})
+        
+        comp_summary = pd.DataFrame([summary_a, summary_b], index=[month_a, month_b]).reset_index()
+        comp_summary = comp_summary.rename(columns={'index': '年月'})
+        comp_summary['CTR'] = (comp_summary['クリック数'] / comp_summary['インプレッション'] * 100).fillna(0)
+        comp_summary['CPC'] = (comp_summary['広告費'] / comp_summary['クリック数']).fillna(0)
+        comp_summary['ROAS'] = (comp_summary['広告売上'] / comp_summary['広告費'] * 100).fillna(0)
+        comp_summary['CV率'] = (comp_summary['注文'] / comp_summary['クリック数'] * 100).fillna(0)
+        comp_summary['ACOS'] = (comp_summary['広告費'] / comp_summary['広告売上'] * 100).fillna(0)
+        
+        st.dataframe(
+            comp_summary[['年月', 'インプレッション', 'クリック数', 'CTR', 'CPC', '広告費', '注文', '広告売上', 'ROAS', 'CV率', 'ACOS']].style.format({
+                'インプレッション': '{:,.0f}', 'クリック数': '{:,.0f}', 'CTR': '{:.2f}%',
+                'CPC': '¥{:,.0f}', '広告費': '¥{:,.0f}', '注文': '{:,.0f}',
+                '広告売上': '¥{:,.0f}', 'ROAS': '{:,.0f}%', 'CV率': '{:.1f}%', 'ACOS': '{:.1f}%'
+            }),
+            use_container_width=True, hide_index=True
+        )
         display_df = df_a
 
     # --- グラフセクション ---
@@ -168,7 +191,6 @@ try:
         sum_a, sum_b = get_summary(df_a), get_summary(df_b)
         diff = sum_a - sum_b
         
-        # st.dataframeで統一するために、(差分)を文字列として結合
         compare_display_list = []
         for t in sum_a.index:
             row = {'タイプ': t}
@@ -176,18 +198,15 @@ try:
                 val_a = sum_a.loc[t, col]
                 val_diff = diff.loc[t, col]
                 prefix = "¥" if "売上" in col or "費" in col else ""
-                # 視認性を考慮し「数値 (+差分)」の形式
                 row[col] = f"{prefix}{val_a:,.0f} ({'+' if val_diff>=0 else ''}{prefix}{val_diff:,.0f})"
             
             ra = (sum_a.loc[t, '広告売上'] / sum_a.loc[t, '広告費'] * 100) if sum_a.loc[t, '広告費'] > 0 else 0
             rb = (sum_b.loc[t, '広告売上'] / sum_b.loc[t, '広告費'] * 100) if sum_b.loc[t, '広告費'] > 0 else 0
             row['ROAS'] = f"{ra:.0f}% ({ra - rb:+.1f}%)"
             compare_display_list.append(row)
-        
-        # 他の表と統一されたst.dataframeを使用
         st.dataframe(pd.DataFrame(compare_display_list), use_container_width=True, hide_index=True)
 
-    # --- 月別推移 ---
+    # --- 月別推移（共通） ---
     st.markdown("---")
     st.subheader("月別 広告総合実績推移 (All Metrics)")
     monthly_trend = df_ads.groupby('年月').agg({
