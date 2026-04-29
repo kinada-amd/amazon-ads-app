@@ -8,7 +8,7 @@ import plotly.express as px
 # 1. ページ設定
 st.set_page_config(page_title="Amazon Ads Analytics", layout="wide")
 
-# 2. デザイン修正
+# 2. デザイン修正（ラジオボタンを横並びにするCSSを追加）
 st.markdown("""
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
@@ -37,6 +37,13 @@ h1, h2, h3 { color: #131921 !important; font-weight: 800 !important; font-family
 .st-emotion-cache-qmp9ai {visibility: visible;}
 .st-emotion-cache-1r1cntt {padding-top: 1rem;}
 .st-emotion-cache-10p9htt {display: none;}
+
+/* ラジオボタンを横並びにする設定 */
+div[data-testid="stSidebar"] div[role="radiogroup"] {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -63,11 +70,9 @@ try:
     st.sidebar.link_button("売上実績へ切り替える", "https://amazon-sales-app.streamlit.app/")
     st.sidebar.markdown("---")
     
-    # UIをスクリーンショットに合わせて調整
     view_mode = st.sidebar.radio("表示モードを選択", ["通常モード", "比較モード"], index=0)
     
-    # 通常モード時のみ表示単位の選択肢を出す
-    unit_mode = "月単位" # 比較モード用のデフォルト
+    unit_mode = "月単位" 
     if view_mode == "通常モード":
         unit_mode = st.sidebar.radio("表示単位を選択", ["月単位", "年度単位"], index=0)
     
@@ -130,7 +135,6 @@ try:
                                   xaxis=dict(showline=True, linecolor='#d5d9d9'), yaxis=dict(showgrid=True, gridcolor='#F3F3F3', tickformat=','))
             st.plotly_chart(fig_bar, use_container_width=True)
 
-        # 月単位の表示の時だけ月別推移を表示
         if unit_mode == "月単位":
             st.markdown("---")
             st.subheader("月別 広告総合実績推移 (All Metrics)")
