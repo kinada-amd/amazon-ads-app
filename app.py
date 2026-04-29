@@ -13,30 +13,16 @@ st.markdown("""
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap');
-
-.stAppDeployButton, [data-testid="stStatusWidget"], footer, header, #MainMenu { 
-    visibility: hidden !important; 
-    display: none !important; 
-}
+.stAppDeployButton, [data-testid="stStatusWidget"], footer, header, #MainMenu { visibility: hidden !important; display: none !important; }
 div[data-testid="stDecoration"] { display: none !important; }
-
 html, body, [data-testid="stAppViewContainer"], .stApp {
     background-color: #FFFFFF !important;
     color: #131921 !important;
     font-family: 'Inter', sans-serif !important;
 }
-
-[data-testid="stSidebar"] { 
-    background-color: #131921 !important; 
-}
-[data-testid="stSidebar"] * { 
-    color: #FFFFFF !important; 
-}
-
-div[data-baseweb="select"] * { 
-    color: #131921 !important; 
-}
-
+[data-testid="stSidebar"] { background-color: #131921 !important; }
+[data-testid="stSidebar"] * { color: #FFFFFF !important; }
+div[data-baseweb="select"] * { color: #131921 !important; }
 .stLinkButton a {
     background-color: #37475a !important;
     border: 1px solid #a2a6ac !important;
@@ -45,26 +31,10 @@ div[data-baseweb="select"] * {
     font-weight: 700 !important;
     text-decoration: none !important;
 }
-
-div[data-testid="stMetricValue"] { 
-    color: #131921 !important; 
-    font-weight: 800 !important; 
-    font-family: 'Inter', sans-serif !important; 
-}
-
-h1, h2, h3, span, p, div { 
-    font-family: 'Inter', sans-serif !important; 
-}
-
-h1, h2, h3 {
-    color: #131921 !important;
-    font-weight: 800 !important;
-}
-
-.st-emotion-cache-zy6yx3 {
-    padding-top: 1rem !important;
-    padding-bottom: 3rem !important;
-}
+div[data-testid="stMetricValue"] { color: #131921 !important; font-weight: 800 !important; font-family: 'Inter', sans-serif !important; }
+h1, h2, h3, span, p, div { font-family: 'Inter', sans-serif !important; }
+h1, h2, h3 { color: #131921 !important; font-weight: 800 !important; }
+.st-emotion-cache-zy6yx3 { padding-top: 1rem !important; padding-bottom: 3rem !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -75,6 +45,7 @@ def load_data(url):
     return io.BytesIO(res.content)
 
 try:
+    # データ読み込みと整形
     df_ads = pd.read_excel(load_data("https://gigaplus.makeshop.jp/aimedia/data/ads.xlsx"))
     df_ads.columns = df_ads.columns.str.strip()
     if '売上' in df_ads.columns and '広告売上' not in df_ads.columns:
@@ -91,12 +62,13 @@ try:
     all_months = sorted(df_ads['年月'].dropna().unique(), reverse=True)
     target_month = st.sidebar.selectbox("表示する期間を選択", all_months, index=0)
 
-    # --- メインコンテンツ ---
-    # 指示通りタイトルを Advertising Summary: {年月} に固定
+    # --- メインタイトル ---
     st.title(f"Advertising Summary: {target_month}")
 
+    # 当月データの抽出と集計
     df_month = df_ads[df_ads['年月'] == target_month].copy()
     
+    # 指標表示 (Metric)
     m1, m2, m3, m4 = st.columns(4)
     total_sp = df_month['広告費'].sum()
     total_sa = df_month['広告売上'].sum()
@@ -107,6 +79,7 @@ try:
 
     col1, col2 = st.columns(2)
     
+    # タイプ別集計
     type_summary = df_month.groupby('タイプ').agg({
         'インプレッション': 'sum', 'クリック数': 'sum', '広告費': 'sum', '注文': 'sum', '広告売上': 'sum'
     }).reset_index()
@@ -141,7 +114,7 @@ try:
         )
         st.plotly_chart(fig_bar, use_container_width=True)
 
-    # --- 単月実績テーブル ---
+    # --- 単月実績テーブル（SP/SB/SDなどの詳細表示） ---
     st.subheader(f"{target_month} タイプ別実績詳細")
     
     type_summary['CTR'] = (type_summary['クリック数'] / type_summary['インプレッション'] * 100).fillna(0)
@@ -150,10 +123,10 @@ try:
     type_summary['CV率'] = (type_summary['注文'] / type_summary['クリック数'] * 100).fillna(0)
     type_summary['ACOS'] = (type_summary['広告費'] / type_summary['広告売上'] * 100).fillna(0)
     
-    type_summary_table = type_summary[['タイプ', 'インプレッション', 'クリック数', 'CTR', 'CPC', '広告費', '注文', '広告売上', 'ROAS', 'CV率', 'ACOS']]
+    ts_table = type_summary[['タイプ', 'インプレッション', 'クリック数', 'CTR', 'CPC', '広告費', '注文', '広告売上', 'ROAS', 'CV率', 'ACOS']]
 
     st.dataframe(
-        type_summary_table.style.format({
+        ts_table.style.format({
             'インプレッション': '{:,.0f}', 'クリック数': '{:,.0f}', 'CTR': '{:.2f}%',
             'CPC': '¥{:,.0f}', '広告費': '¥{:,.0f}', '注文': '{:,.0f}',
             '広告売上': '¥{:,.0f}', 'ROAS': '{:,.0f}%', 'CV率': '{:.1f}%', 'ACOS': '{:.1f}%'
@@ -162,6 +135,8 @@ try:
     )
 
     st.markdown("---")
+    
+    # --- 全期間実績推移テーブル ---
     st.subheader("月別 広告総合実績推移 (All Metrics)")
     
     monthly_trend = df_ads.groupby('年月').agg({
@@ -174,10 +149,10 @@ try:
     monthly_trend['CV率'] = (monthly_trend['注文'] / monthly_trend['クリック数'] * 100).fillna(0)
     monthly_trend['ACOS'] = (monthly_trend['広告費'] / monthly_trend['広告売上'] * 100).fillna(0)
 
-    monthly_trend = monthly_trend[['年月', 'インプレッション', 'クリック数', 'CTR', 'CPC', '広告費', '注文', '広告売上', 'ROAS', 'CV率', 'ACOS']]
+    mt_table = monthly_trend[['年月', 'インプレッション', 'クリック数', 'CTR', 'CPC', '広告費', '注文', '広告売上', 'ROAS', 'CV率', 'ACOS']]
 
     st.dataframe(
-        monthly_trend.style.format({
+        mt_table.style.format({
             'インプレッション': '{:,.0f}', 'クリック数': '{:,.0f}', 'CTR': '{:.2f}%',
             'CPC': '¥{:,.0f}', '広告費': '¥{:,.0f}', '注文': '{:,.0f}',
             '広告売上': '¥{:,.0f}', 'ROAS': '{:,.0f}%', 'CV率': '{:.1f}%', 'ACOS': '{:.1f}%'
