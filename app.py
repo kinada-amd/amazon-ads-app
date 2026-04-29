@@ -34,9 +34,6 @@ div[data-baseweb="select"] * { color: #131921 !important; }
 div[data-testid="stMetricValue"] { color: #131921 !important; font-weight: 800 !important; font-family: 'Inter', sans-serif !important; }
 h1, h2, h3 { color: #131921 !important; font-weight: 800 !important; font-family: 'Inter', sans-serif !important; }
 .st-emotion-cache-zy6yx3 {padding-top: 1rem !important;padding-bottom: 3rem !important;}
-.st-emotion-cache-qmp9ai {visibility: visible;}
-.st-emotion-cache-1r1cntt {padding-top: 1rem;}
-.st-emotion-cache-10p9htt {display: none;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -46,18 +43,17 @@ def load_data(url):
     res.raise_for_status()
     return io.BytesIO(res.content)
 
-# --- 比較テーブル用カラーリング関数 ---
+# --- エラー修正済み：比較テーブル用カラーリング関数 ---
 def style_comparison(val):
     if isinstance(val, str) and '(' in val:
-        # ( ) 内の数値と記号を取り出す
         diff_part = val.split('(')[-1].replace(')', '').replace('¥', '').replace('%', '').replace(',', '')
         try:
             diff_val = float(diff_part)
-            # 基本はプラスが緑、マイナスが赤
+            # 添付画像に基づいた配色
             if diff_val > 0:
-                return 'background-color: #e6f4ea; color: #1e7e34; font-weight: bold; border-radius: 4px;'
+                return 'background-color: #e6f4ea; color: #1e7e34; font-weight: bold; border-radius: 12px; padding: 2px 8px;'
             elif diff_val < 0:
-                return 'background-color: #fce8e6; color: #d93025; font-weight: bold; border-radius: 4px;'
+                return 'background-color: #fce8e6; color: #d93025; font-weight: bold; border-radius: 12px; padding: 2px 8px;'
         except:
             pass
     return ''
@@ -90,23 +86,16 @@ try:
         m3.metric("ROAS", f"{(total_sa/total_sp*100):.0f}%" if total_sp > 0 else "0%")
         m4.metric("ACOS", f"{(total_sp/total_sa*100):.1f}%" if total_sa > 0 else "0.0%")
         
-        type_summary = df_month.groupby('タイプ').agg({'インプレッション':'sum','クリック数':'sum','広告費':'sum','注文':'sum','広告売上':'sum'}).reset_index()
+        type_sum = df_month.groupby('タイプ').agg({'インプレッション':'sum','クリック数':'sum','広告費':'sum','注文':'sum','広告売上':'sum'}).reset_index()
         st.subheader(f"{target_month} タイプ別実績詳細")
-        for col, calc in [('CTR', 'クリック数/インプレッション*100'), ('CPC', '広告費/クリック数'), ('ROAS', '広告売上/広告費*100'), ('CV率', '注文/クリック数*100'), ('ACOS', '広告費/広告売上*100')]:
-            type_summary[col] = eval(f"(type_summary['{calc.split('/')[0]}'] / type_summary['{calc.split('/')[1].split('*')[0]}'] * {calc.split('*')[1] if '*' in calc else '1'})").fillna(0)
-        
-        st.dataframe(type_summary.style.format({'インプレッション':'{:,.0f}','クリック数':'{:,.0f}','CTR':'{:.2f}%','CPC':'¥{:,.0f}','広告費':'¥{:,.0f}','注文':'{:,.0f}','広告売上':'¥{:,.0f}','ROAS':'{:,.0f}%','CV率':'{:.1f}%','ACOS':'{:.1f}%'}), use_container_width=True, hide_index=True)
+        # メトリクス計算
+        type_sum['CTR'] = (type_sum['クリック数']/type_sum['インプレッション']*100).fillna(0)
+        type_sum['CPC'] = (type_sum['広告費']/type_sum['クリック数']).fillna(0)
+        type_sum['ROAS'] = (type_sum['広告売上']/type_sum['広告費']*100).fillna(0)
+        type_sum['CV率'] = (type_sum['注文']/type_sum['クリック数']*100).fillna(0)
+        type_sum['ACOS'] = (type_sum['広告費']/type_sum['広告売上']*100).fillna(0)
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.subheader("タイプ別 広告費比率")
-            fig_pie = px.pie(type_summary, values='広告費', names='タイプ', color_discrete_sequence=['#232F3E', '#FF9900', '#37475A', '#A9A9A9'], hole=0.4)
-            st.plotly_chart(fig_pie, use_container_width=True)
-        with col2:
-            st.subheader("タイプ別 実績")
-            fig_bar = go.Figure(go.Bar(x=type_summary['タイプ'], y=type_summary['広告売上'], marker_color='#FF9900', text=type_summary['広告売上'].apply(lambda x: f"¥{x:,.0f}"), textposition='outside'))
-            fig_bar.update_layout(plot_bgcolor='white', font_family="Inter", xaxis=dict(showline=True, linecolor='#d5d9d9'), yaxis=dict(showgrid=True, gridcolor='#F3F3F3'))
-            st.plotly_chart(fig_bar, use_container_width=True)
+        st.dataframe(type_sum.style.format({'インプレッション':'{:,.0f}','クリック数':'{:,.0f}','CTR':'{:.2f}%','CPC':'¥{:,.0f}','広告費':'¥{:,.0f}','注文':'{:,.0f}','広告売上':'¥{:,.0f}','ROAS':'{:,.0f}%','CV率':'{:.1f}%','ACOS':'{:.1f}%'}), use_container_width=True, hide_index=True)
 
     else:
         month_a = st.sidebar.selectbox("比較期間 A", all_months, index=0)
@@ -116,26 +105,21 @@ try:
         
         sp_a, sa_a = df_a['広告費'].sum(), df_a['広告売上'].sum()
         sp_b, sa_b = df_b['広告費'].sum(), df_b['広告売上'].sum()
-        roas_a, roas_b = (sa_a/sp_a*100 if sp_a>0 else 0), (sa_b/sp_b*100 if sp_b>0 else 0)
-        acos_a, acos_b = (sp_a/sa_a*100 if sa_a>0 else 0), (sp_b/sa_b*100 if sa_b>0 else 0)
         
         m1, m2, m3, m4 = st.columns(4)
         m1.metric("総広告費", f"¥{int(sp_a):,}", delta=f"¥{int(sp_a - sp_b):,}", delta_color="inverse")
         m2.metric("総広告売上", f"¥{int(sa_a):,}", delta=f"¥{int(sa_a - sa_b):,}")
-        m3.metric("ROAS", f"{roas_a:.0f}%", delta=f"{roas_a - roas_b:.1f}%")
-        m4.metric("ACOS", f"{acos_a:.1f}%", delta=f"{acos_a - acos_b:.1f}%", delta_color="inverse")
+        m3.metric("ROAS", f"{(sa_a/sp_a*100):.0f}%", delta=f"{(sa_a/sp_a*100)-(sa_b/sp_b*100):.1f}%")
+        m4.metric("ACOS", f"{(sp_a/sa_a*100):.1f}%", delta=f"{(sp_a/sa_a*100)-(sp_b/sa_b*100):.1f}%", delta_color="inverse")
         
+        # 1. 総合実績テーブル
         st.subheader("広告総合実績比較")
         sum_a_all = df_a.agg({'インプレッション':'sum','クリック数':'sum','広告費':'sum','注文':'sum','広告売上':'sum'})
         sum_b_all = df_b.agg({'インプレッション':'sum','クリック数':'sum','広告費':'sum','注文':'sum','広告売上':'sum'})
         comp_summary = pd.DataFrame([sum_a_all, sum_b_all], index=[month_a, month_b]).reset_index().rename(columns={'index': '年月'})
-        comp_summary['CTR'] = (comp_summary['クリック数']/comp_summary['インプレッション']*100).fillna(0)
-        comp_summary['CPC'] = (comp_summary['広告費']/comp_summary['クリック数']).fillna(0)
-        comp_summary['ROAS'] = (comp_summary['広告売上']/comp_summary['広告費']*100).fillna(0)
-        comp_summary['CV率'] = (comp_summary['注文']/comp_summary['クリック数']*100).fillna(0)
-        comp_summary['ACOS'] = (comp_summary['広告費']/comp_summary['広告売上']*100).fillna(0)
-        st.dataframe(comp_summary.style.format({'インプレッション':'{:,.0f}','クリック数':'{:,.0f}','CTR':'{:.2f}%','CPC':'¥{:,.0f}','広告費':'¥{:,.0f}','注文':'{:,.0f}','広告売上':'¥{:,.0f}','ROAS':'{:,.0f}%','CV率':'{:.1f}%','ACOS':'{:.1f}%'}), use_container_width=True, hide_index=True)
+        st.dataframe(comp_summary.style.format({'インプレッション':'{:,.0f}','クリック数':'{:,.0f}','広告費':'¥{:,.0f}','注文':'{:,.0f}','広告売上':'¥{:,.0f}'}), use_container_width=True, hide_index=True)
 
+        # 2. タイプ別実績比較テーブル (エラー修正 & スタイル適用)
         st.subheader(f"タイプ別実績比較 ({month_a} vs {month_b})")
         def get_sum(df): return df.groupby('タイプ').agg({'インプレッション':'sum','クリック数':'sum','広告費':'sum','注文':'sum','広告売上':'sum'})
         s_a, s_b = get_sum(df_a), get_sum(df_b)
@@ -150,34 +134,28 @@ try:
             row['ROAS'] = f"{ra:.0f}% ({ra - rb:+.1f}%)"
             compare_list.append(row)
         
-        # カラーリング適用
         df_compare = pd.DataFrame(compare_list)
-        st.dataframe(df_compare.style.applymap(style_comparison, subset=['インプレッション', 'クリック数', '広告費', '注文', '広告売上', 'ROAS']), use_container_width=True, hide_index=True)
+        # applymap の代わりに map を使用してエラー回避
+        st.dataframe(df_compare.style.map(style_comparison, subset=['インプレッション', 'クリック数', '広告費', '注文', '広告売上', 'ROAS']), use_container_width=True, hide_index=True)
 
+        # 3. グラフ (引数名エラー修正)
         cg1, cg2 = st.columns(2)
         sum_a_g, sum_b_g = s_a.reset_index(), s_b.reset_index()
         sum_a_g['期間'], sum_b_g['期間'] = month_a, month_b
         cdf = pd.concat([sum_a_g, sum_b_g])
         with cg1:
             st.subheader("タイプ別 広告費比較")
-            fig_sp = px.bar(cdf, x='タイプ', y='広告費', color='期間', barmode='group', color_discrete_map={month_a: '#37475A', month_b: '#A9A9A9'}, text_auto=',.0f')
-            fig_sp.update_layout(plot_bgcolor='white', font_family="Inter", legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
+            fig_sp = px.bar(cdf, x='タイプ', y='広告費', color='期間', barmode='group', color_discrete_map={month_a: '#37475A', month_b: '#A9A9A9'})
             st.plotly_chart(fig_sp, use_container_width=True)
         with cg2:
             st.subheader("タイプ別 実績比較")
-            fig_sa = px.bar(cdf, x='タイプ', y='広告売上', color='期間', barmode='group', color_discrete_map={month_a: '#FF9900', month_b: '#232F3E'}, text_auto=',.0f')
-            fig_sa.update_layout(plot_bgcolor='white', font_family="Inter", legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
+            fig_sa = px.bar(cdf, x='タイプ', y='広告売上', color='期間', barmode='group', color_discrete_map={month_a: '#FF9900', month_b: '#232F3E'})
             st.plotly_chart(fig_sa, use_container_width=True)
 
     st.markdown("---")
     st.subheader("月別 広告総合実績推移 (All Metrics)")
     trend = df_ads.groupby('年月').agg({'インプレッション':'sum','クリック数':'sum','広告費':'sum','注文':'sum','広告売上':'sum'}).sort_index(ascending=False).reset_index()
-    trend['CTR'] = (trend['クリック数']/trend['インプレッション']*100).fillna(0)
-    trend['CPC'] = (trend['広告費']/trend['クリック数']).fillna(0)
-    trend['ROAS'] = (trend['広告売上']/trend['広告費']*100).fillna(0)
-    trend['CV率'] = (trend['注文']/trend['クリック数']*100).fillna(0)
-    trend['ACOS'] = (trend['広告費']/trend['広告売上']*100).fillna(0)
-    st.dataframe(trend[['年月', 'インプレッション', 'クリック数', 'CTR', 'CPC', '広告費', '注文', '広告売上', 'ROAS', 'CV率', 'ACOS']].style.format({'インプレッション':'{:,.0f}','クリック数':'{:,.0f}','CTR':'{:.2f}%','CPC':'¥{:,.0f}','広告費':'¥{:,.0f}','注文':'{:,.0f}','広告売上':'¥{:,.0f}','ROAS':'{:,.0f}%','CV率':'{:.1f}%','ACOS':'{:.1f}%'}), use_container_width=True, hide_index=True)
+    st.dataframe(trend.style.format({'インプレッション':'{:,.0f}','クリック数':'{:,.0f}','広告費':'¥{:,.0f}','注文':'{:,.0f}','広告売上':'¥{:,.0f}'}), use_container_width=True, hide_index=True)
 
 except Exception as e:
     st.error(f"エラーが発生しました: {e}")
