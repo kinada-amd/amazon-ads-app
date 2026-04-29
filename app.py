@@ -18,7 +18,10 @@ st.markdown("""
     visibility: hidden !important; 
     display: none !important; 
 }
-div[data-testid="stDecoration"] { display: none !important; }
+
+div[data-testid="stDecoration"] { 
+    display: none !important; 
+}
 
 html, body, [data-testid="stAppViewContainer"], .stApp {
     background-color: #FFFFFF !important;
@@ -29,6 +32,7 @@ html, body, [data-testid="stAppViewContainer"], .stApp {
 [data-testid="stSidebar"] { 
     background-color: #131921 !important; 
 }
+
 [data-testid="stSidebar"] * { 
     color: #FFFFFF !important; 
 }
@@ -51,6 +55,7 @@ div[data-testid="stMetricValue"] {
     font-weight: 800 !important; 
     font-family: 'Inter', sans-serif !important; 
 }
+
 h1, h2, h3 { 
     color: #131921 !important; 
     font-weight: 800 !important; 
