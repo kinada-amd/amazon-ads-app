@@ -15,7 +15,7 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap');
 .stAppDeployButton, [data-testid="stStatusWidget"], footer, header, #MainMenu { visibility: hidden !important; display: none !important; }
 div[data-testid="stDecoration"] { display: none !important; }
-html, body, [data-testid="stAppViewContainer"], .stApp, [data-testid="stVerticalBlock"] {
+html, body, [data-testid="stAppViewContainer"], .stApp, [data-testid="stVerticalBlock"], [data-testid="stHeader"] {
     background-color: #FFFFFF !important;
     color: #131921 !important;
     font-family: 'Inter', sans-serif !important;
@@ -33,8 +33,8 @@ div[data-baseweb="select"] * { color: #131921 !important; }
     text-decoration: none !important;
 }
 div[data-testid="stMetricValue"] { color: #131921 !important; font-weight: 800 !important; font-family: 'Inter', sans-serif !important; }
-h1, h2, h3, span, p, div { font-family: 'Inter', sans-serif !important; }
-h1, h2, h3 { color: #131921 !important; font-weight: 800 !important; }
+h1, h2, h3, span, p, div, small { font-family: 'Inter', sans-serif !important; color: #131921 !important; }
+h1, h2, h3 { font-weight: 800 !important; }
 .st-emotion-cache-zy6yx3 { padding-top: 1rem !important; padding-bottom: 3rem !important; }
 </style>
 """, unsafe_allow_html=True)
