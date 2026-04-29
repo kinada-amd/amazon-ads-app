@@ -8,31 +8,26 @@ import plotly.express as px
 # 1. ページ設定
 st.set_page_config(page_title="Amazon Ads Analytics", layout="wide")
 
-# 2. デザイン修正（白文字化対策 ＋ アイコン刷新 ＋ レイアウト漏れ修正）
+# 2. デザイン修正（バグ排除・フォント統一・アイコン刷新）
 st.markdown("""
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap');
     
-    /* 基本要素の非表示 */
     .stAppDeployButton, [data-testid="stStatusWidget"], footer, header, #MainMenu { visibility: hidden !important; display: none !important; }
     div[data-testid="stDecoration"] { display: none !important; }
     
-    /* メイン背景 */
     html, body, [data-testid="stAppViewContainer"], .stApp {
         background-color: #FFFFFF !important;
         color: #131921 !important;
         font-family: 'Inter', sans-serif !important;
     }
     
-    /* サイドバー */
     [data-testid="stSidebar"] { background-color: #131921 !important; }
     [data-testid="stSidebar"] * { color: #FFFFFF !important; }
     
-    /* セレクトボックス内の文字色を黒に固定 */
     div[data-baseweb="select"] * { color: #131921 !important; }
     
-    /* サイドバーのリンクボタン（FontAwesome用カスタム） */
     .stLinkButton a {
         background-color: #37475a !important;
         border: 1px solid #a2a6ac !important;
@@ -46,8 +41,10 @@ st.markdown("""
         gap: 10px !important;
     }
     
-    div[data-testid="stMetricValue"] { color: #131921 !important; font-weight: 800 !important; }
-    h1, h2, h3 { color: #131921 !important; font-weight: 800 !important; }
+    div[data-testid="stMetricValue"] { color: #131921 !important; font-weight: 800 !important; font-family: 'Inter', sans-serif !important; }
+    h1, h2, h3 { color: #131921 !important; font-weight: 800 !important; font-family: 'Inter', sans-serif !important; }
+    
+    .st-emotion-cache-zy6yx3 {padding-top: 1rem !important;}
     </style>
     """, unsafe_allow_html=True)
 
@@ -58,23 +55,17 @@ def load_data(url):
     return io.BytesIO(res.content)
 
 try:
-    # データ読み込み
     df_ads = pd.read_excel(load_data("https://gigaplus.makeshop.jp/aimedia/data/ads.xlsx"))
     df_ads.columns = df_ads.columns.str.strip()
 
-    # 「売上」列を「広告売上」として統一
     if '売上' in df_ads.columns and '広告売上' not in df_ads.columns:
         df_ads = df_ads.rename(columns={'売上': '広告売上'})
 
-    # 前処理
     df_ads['日付_dt'] = pd.to_datetime(df_ads['日付'], format='%Y年%m月', errors='coerce')
     df_ads['年月'] = df_ads['日付_dt'].dt.strftime('%Y-%m')
 
-    # サイドバー（📊を廃止し、iタグでアイコン化）
     st.sidebar.markdown('<h2><i class="fa-solid fa-chart-line"></i> Ads Analytics</h2>', unsafe_allow_html=True)
-    
-    # リンクボタンもFontAwesomeアイコンを含むテキストに変更
-    st.sidebar.link_button("📈 売上分析アプリへ移動", "https://amazon-sales-app.streamlit.app/")
+    st.sidebar.link_button("📊 売上分析アプリへ移動", "https://amazon-sales-app.streamlit.app/")
     st.sidebar.markdown("---")
     
     all_months = sorted(df_ads['年月'].dropna().unique(), reverse=True)
@@ -82,22 +73,19 @@ try:
 
     st.title(f"Advertising Summary: {target_month}")
 
-    # 当月データの抽出
     df_month = df_ads[df_ads['年月'] == target_month]
     
-    # タイプ別に集計
     type_summary = df_month.groupby('タイプ').agg({
         '広告費': 'sum',
         '広告売上': 'sum'
     }).reset_index()
 
-    # 指標表示
     m1, m2, m3, m4 = st.columns(4)
     total_sp = df_month['広告費'].sum()
     total_sa = df_month['広告売上'].sum()
     m1.metric("総広告費", f"¥{int(total_sp):,}")
     m2.metric("総広告売上", f"¥{int(total_sa):,}")
-    m3.metric("ROAS", f"{(total_sa/total_sp):.2f}" if total_sp > 0 else "0.00")
+    m3.metric("ROAS", f"{(total_sa/total_sp*100):.0f}%" if total_sp > 0 else "0%")
     m4.metric("ACOS", f"{(total_sp/total_sa*100):.1f}%" if total_sa > 0 else "0.0%")
 
     col1, col2 = st.columns(2)
@@ -107,15 +95,33 @@ try:
         fig_pie = px.pie(type_summary, values='広告費', names='タイプ', 
                          color='タイプ', color_discrete_sequence=amazon_colors,
                          hole=0.4)
-        fig_pie.update_traces(textposition='inside', textinfo='percent+label', marker=dict(line=dict(color='#FFFFFF', width=2)))
+        fig_pie.update_traces(
+            textposition='inside', 
+            textinfo='percent+label', 
+            marker=dict(line=dict(color='#FFFFFF', width=2)),
+            insidetextfont=dict(size=16) # 円グラフ内の文字を大きく
+        )
+        fig_pie.update_layout(hoverlabel=dict(font_size=20)) # マウスオーバー文字
         st.plotly_chart(fig_pie, use_container_width=True)
 
     with col2:
-        st.subheader("タイプ別 実績比較")
+        st.subheader("タイプ別 実績（広告売上）")
         fig_bar = go.Figure()
-        fig_bar.add_trace(go.Bar(name='広告費', x=type_summary['タイプ'], y=type_summary['広告費'], marker_color='#232F3E'))
-        fig_bar.add_trace(go.Bar(name='広告売上', x=type_summary['タイプ'], y=type_summary['広告売上'], marker_color='#FF9900'))
-        fig_bar.update_layout(barmode='group', plot_bgcolor='white', margin=dict(t=20, b=20))
+        # 広告費を削除し、広告売上のみを表示
+        fig_bar.add_trace(go.Bar(
+            name='広告売上', 
+            x=type_summary['タイプ'], 
+            y=type_summary['広告売上'], 
+            marker_color='#FF9900',
+            hovertemplate='売上: ¥%{y:,.0f}<extra></extra>'
+        ))
+        fig_bar.update_layout(
+            plot_bgcolor='white', 
+            margin=dict(t=20, b=20),
+            hoverlabel=dict(font_size=20), # マウスオーバー文字を大きく
+            xaxis=dict(showline=True, linecolor='#d5d9d9'),
+            yaxis=dict(showgrid=True, gridcolor='#F3F3F3', tickformat=',')
+        )
         st.plotly_chart(fig_bar, use_container_width=True)
 
     st.markdown("---")
