@@ -14,33 +14,34 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap');
 
+/* ヘッダー・フッター・デプロイボタン等の非表示 */
 .stAppDeployButton, [data-testid="stStatusWidget"], footer, header, #MainMenu { 
     visibility: hidden !important; 
     display: none !important; 
 }
+div[data-testid="stDecoration"] { display: none !important; }
 
-div[data-testid="stDecoration"] { 
-    display: none !important; 
-}
-
+/* メイン背景を白に、フォントをInterに固定 */
 html, body, [data-testid="stAppViewContainer"], .stApp {
     background-color: #FFFFFF !important;
     color: #131921 !important;
     font-family: 'Inter', sans-serif !important;
 }
 
+/* サイドバーのネイビー背景設定 */
 [data-testid="stSidebar"] { 
     background-color: #131921 !important; 
 }
-
 [data-testid="stSidebar"] * { 
     color: #FFFFFF !important; 
 }
 
+/* サイドバー内の入力フォームを黒文字に固定 */
 div[data-baseweb="select"] * { 
     color: #131921 !important; 
 }
 
+/* リンクボタンのデザイン */
 .stLinkButton a {
     background-color: #37475a !important;
     border: 1px solid #a2a6ac !important;
@@ -50,18 +51,19 @@ div[data-baseweb="select"] * {
     text-decoration: none !important;
 }
 
+/* 数値（Metric）と見出しのフォントをInterに固定 */
 div[data-testid="stMetricValue"] { 
     color: #131921 !important; 
     font-weight: 800 !important; 
     font-family: 'Inter', sans-serif !important; 
 }
-
 h1, h2, h3 { 
     color: #131921 !important; 
     font-weight: 800 !important; 
     font-family: 'Inter', sans-serif !important; 
 }
 
+/* 上部余白の調整 */
 .st-emotion-cache-zy6yx3 {
     padding-top: 1rem !important;
     padding-bottom: 3rem !important;
