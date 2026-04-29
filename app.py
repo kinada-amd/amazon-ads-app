@@ -76,7 +76,6 @@ try:
         m3.metric("ROAS", f"{(total_sa/total_sp*100):.0f}%" if total_sp > 0 else "0%")
         m4.metric("ACOS", f"{(total_sp/total_sa*100):.1f}%" if total_sa > 0 else "0.0%")
         
-        # 通常モードのグラフ・テーブル用データ
         display_df = df_month
         
     else:
@@ -100,7 +99,7 @@ try:
         m3.metric("ROAS", f"{roas_a:.0f}%", delta=f"{roas_a - roas_b:.1f}%")
         m4.metric("ACOS", f"{acos_a:.1f}%", delta=f"{acos_a - acos_b:.1f}%", delta_color="inverse")
         
-        display_df = df_a # ベースは最新月
+        display_df = df_a
 
     # --- グラフセクション ---
     if view_mode == "通常モード":
@@ -130,7 +129,6 @@ try:
                                   xaxis=dict(showline=True, linecolor='#d5d9d9'), yaxis=dict(showgrid=True, gridcolor='#F3F3F3', tickformat=','))
             st.plotly_chart(fig_bar, use_container_width=True)
     else:
-        # 比較モードのグラフ：円グラフを削除し、2ヶ月の広告売上を比較
         st.subheader("タイプ別 実績比較（広告売上）")
         sum_a = df_a.groupby('タイプ')['広告売上'].sum().reset_index()
         sum_b = df_b.groupby('タイプ')['広告売上'].sum().reset_index()
@@ -138,8 +136,9 @@ try:
         sum_b['期間'] = month_b
         compare_df = pd.concat([sum_a, sum_b])
 
+        # エラー箇所を修正: color_discrete_map を使用
         fig_compare = px.bar(compare_df, x='タイプ', y='広告売上', color='期間', barmode='group',
-                             color_discrete_manual={month_a: '#FF9900', month_b: '#232F3E'},
+                             color_discrete_map={month_a: '#FF9900', month_b: '#232F3E'},
                              text_auto=',.0f')
         fig_compare.update_layout(plot_bgcolor='white', font_family="Inter", margin=dict(t=40, b=20))
         st.plotly_chart(fig_compare, use_container_width=True)
@@ -153,9 +152,18 @@ try:
         type_summary['CV率'] = (type_summary['注文'] / type_summary['クリック数'] * 100).fillna(0)
         type_summary['ACOS'] = (type_summary['広告費'] / type_summary['広告売上'] * 100).fillna(0)
         table_data = type_summary[['タイプ', 'インプレッション', 'クリック数', 'CTR', 'CPC', '広告費', '注文', '広告売上', 'ROAS', 'CV率', 'ACOS']]
+        
+        # フォーマット適用
+        st.dataframe(
+            table_data.style.format({
+                'インプレッション': '{:,.0f}', 'クリック数': '{:,.0f}', 'CTR': '{:.2f}%',
+                'CPC': '¥{:,.0f}', '広告費': '¥{:,.0f}', '注文': '{:,.0f}',
+                '広告売上': '¥{:,.0f}', 'ROAS': '{:,.0f}%', 'CV率': '{:.1f}%', 'ACOS': '{:.1f}%'
+            }),
+            use_container_width=True, hide_index=True
+        )
     else:
         st.subheader(f"タイプ別実績比較 ({month_a} vs {month_b})")
-        # 比較用テーブルロジック
         def get_summary(df):
             return df.groupby('タイプ').agg({
                 'インプレッション': 'sum', 'クリック数': 'sum', '広告費': 'sum', '注文': 'sum', '広告売上': 'sum'
@@ -163,11 +171,8 @@ try:
         
         sum_a = get_summary(df_a)
         sum_b = get_summary(df_b)
-        
-        # 差分の計算
         diff = sum_a - sum_b
         
-        # 表示用データの整形（最新数値 (差分) 形式）
         compare_table = []
         for t in sum_a.index:
             row = {'タイプ': t}
@@ -175,23 +180,22 @@ try:
                 val_a = sum_a.loc[t, col]
                 val_diff = diff.loc[t, col]
                 prefix = "¥" if "売上" in col or "費" in col else ""
-                row[col] = f"{prefix}{val_a:,.0f} ({'+' if val_diff>=0 else ''}{val_diff:,.0f})"
+                row[col] = f"{prefix}{val_a:,.0f}\n({'+' if val_diff>=0 else ''}{val_diff:,.0f})"
             
-            # 効率指標の計算
-            roas_a = (sum_a.loc[t, '広告売上'] / sum_a.loc[t, '広告費'] * 100) if sum_a.loc[t, '広告費'] > 0 else 0
-            roas_b = (sum_b.loc[t, '広告売上'] / sum_b.loc[t, '広告費'] * 100) if sum_b.loc[t, '広告費'] > 0 else 0
-            row['ROAS'] = f"{roas_a:.0f}% ({roas_a - roas_b:+.1f}%)"
+            # ROAS / ACOS の計算
+            ra = (sum_a.loc[t, '広告売上'] / sum_a.loc[t, '広告費'] * 100) if sum_a.loc[t, '広告費'] > 0 else 0
+            rb = (sum_b.loc[t, '広告売上'] / sum_b.loc[t, '広告費'] * 100) if sum_b.loc[t, '広告費'] > 0 else 0
+            row['ROAS'] = f"{ra:.0f}%\n({ra - rb:+.1f}%)"
             
-            acos_a = (sum_a.loc[t, '広告費'] / sum_a.loc[t, '広告売上'] * 100) if sum_a.loc[t, '広告売上'] > 0 else 0
-            acos_b = (sum_b.loc[t, '広告費'] / sum_b.loc[t, '広告売上'] * 100) if sum_b.loc[t, '広告売上'] > 0 else 0
-            row['ACOS'] = f"{acos_a:.1f}% ({acos_a - acos_b:+.1f}%)"
+            aa = (sum_a.loc[t, '広告費'] / sum_a.loc[t, '広告売上'] * 100) if sum_a.loc[t, '広告売上'] > 0 else 0
+            ab = (sum_b.loc[t, '広告費'] / sum_b.loc[t, '広告売上'] * 100) if sum_b.loc[t, '広告売上'] > 0 else 0
+            row['ACOS'] = f"{aa:.1f}%\n({aa - ab:+.1f}%)"
             
             compare_table.append(row)
-        table_data = pd.DataFrame(compare_table)
+        
+        st.dataframe(pd.DataFrame(compare_table), use_container_width=True, hide_index=True)
 
-    st.dataframe(table_data, use_container_width=True, hide_index=True)
-
-    # --- 月別推移（全モード共通） ---
+    # --- 月別推移 ---
     st.markdown("---")
     st.subheader("月別 広告総合実績推移 (All Metrics)")
     
