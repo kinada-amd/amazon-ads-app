@@ -10,48 +10,33 @@ st.set_page_config(page_title="Amazon Ads Analytics", layout="wide")
 
 # 2. デザイン修正（ラジオボタンを横並びにするCSSを追加）
 st.markdown("""
+# --- デザイン修正セクション ---
+st.markdown("""
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap');
-.stAppDeployButton, [data-testid="stStatusWidget"], footer, header, #MainMenu { visibility: hidden !important; display: none !important; }
-div[data-testid="stDecoration"] { display: none !important; }
-html, body, [data-testid="stAppViewContainer"], .stApp {
-    background-color: #FFFFFF !important;
-    color: #131921 !important;
-    font-family: 'Inter', sans-serif !important;
-}
-[data-testid="stSidebar"] { background-color: #131921 !important; }
-[data-testid="stSidebar"] * { color: #FFFFFF !important; }
-div[data-baseweb="select"] * { color: #131921 !important; }
-.stLinkButton a {
-    background-color: #37475a !important;
-    border: 1px solid #a2a6ac !important;
-    color: white !important;
-    border-radius: 8px !important;
-    font-weight: 700 !important;
-    text-decoration: none !important;
-}
-div[data-testid="stMetricValue"] { color: #131921 !important; font-weight: 800 !important; font-family: 'Inter', sans-serif !important; }
-h1, h2, h3 { color: #131921 !important; font-weight: 800 !important; font-family: 'Inter', sans-serif !important; }
-.st-emotion-cache-zy6yx3 {padding-top: 1rem !important;padding-bottom: 3rem !important;}
-.st-emotion-cache-qmp9ai {visibility: visible;}
-.st-emotion-cache-1r1cntt {padding-top: 1rem;}
-.st-emotion-cache-10p9htt {display: none;}
+/* ... (中略: 既存のフォントや背景色設定) ... */
 
-/* ラジオボタンを横並びにする設定 */
+/* ラジオボタンを強制的に横並びにするCSS */
 div[data-testid="stSidebar"] div[role="radiogroup"] {
-    display: flex;
-    flex-direction: row;
-    gap: 20px;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 15px !important;
 }
-.st-bh {
-    -webkit-box-orient: horizontal;
-    -webkit-box-direction: normal;
-    flex-direction: row;
-    margin-top: 0.75rem;
-    margin-bottom: -0.5rem;
+
+/* ラジオボタン内の各選択肢の余白調整 */
+div[data-testid="stSidebar"] div[role="radiogroup"] > label {
+    margin-bottom: 0px !important;
+    width: auto !important;
+    min-width: fit-content !important;
+}
+
+/* ラジオボタンのラベル（表示単位を選択 など）のスタイル */
+div[data-testid="stSidebar"] .st-emotion-cache-6qob1r {
+    margin-bottom: 10px !important;
 }
 </style>
+""", unsafe_allow_html=True)
 """, unsafe_allow_html=True)
 
 @st.cache_data(ttl=300)
