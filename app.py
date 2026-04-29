@@ -13,55 +13,22 @@ st.markdown("""
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap');
-
-.stAppDeployButton, [data-testid="stStatusWidget"], footer, header, #MainMenu { 
-    visibility: hidden !important; 
-    display: none !important; 
-}
+.stAppDeployButton, [data-testid="stStatusWidget"], footer, header, #MainMenu { visibility: hidden !important; display: none !important; }
 div[data-testid="stDecoration"] { display: none !important; }
-
 html, body, [data-testid="stAppViewContainer"], .stApp, [data-testid="stVerticalBlock"] {
     background-color: #FFFFFF !important;
     color: #131921 !important;
     font-family: 'Inter', sans-serif !important;
 }
-
-[data-testid="stSidebar"] { 
-    background-color: #131921 !important; 
-}
-[data-testid="stSidebar"] * { 
-    color: #FFFFFF !important; 
-}
-
-div[data-baseweb="select"] * { 
-    color: #131921 !important; 
-}
-
-iframe[title="st.plotly_chart"], .js-plotly-plot, .plot-container {
-    background-color: #FFFFFF !important;
-}
-
-div[data-testid="stMetricValue"] { 
-    color: #131921 !important; 
-    font-weight: 800 !important; 
-}
-
-h1, h2, h3, span, p, div { 
-    color: #131921 !important; 
-}
-
-[data-testid="stSidebar"] h2, [data-testid="stSidebar"] p {
-    color: #FFFFFF !important;
-}
-
-.stLinkButton a {
-    background-color: #37475a !important;
-    border: 1px solid #a2a6ac !important;
-    color: white !important;
-    border-radius: 8px !important;
-    font-weight: 700 !important;
-    text-decoration: none !important;
-}
+[data-testid="stSidebar"] { background-color: #131921 !important; }
+[data-testid="stSidebar"] * { color: #FFFFFF !important; }
+div[data-baseweb="select"] * { color: #131921 !important; }
+iframe[title="st.plotly_chart"], .js-plotly-plot, .plot-container { background-color: #FFFFFF !important; }
+div[data-testid="stMetricValue"] { color: #131921 !important; font-weight: 800 !important; font-family: 'Inter', sans-serif !important; }
+h1, h2, h3, span, p, div, small { font-family: 'Inter', sans-serif !important; color: #131921 !important; }
+h1, h2, h3 { font-weight: 800 !important; }
+[data-testid="stSidebar"] h2, [data-testid="stSidebar"] p { color: #FFFFFF !important; }
+.stLinkButton a { background-color: #37475a !important; border: 1px solid #a2a6ac !important; color: white !important; border-radius: 8px !important; font-weight: 700 !important; text-decoration: none !important; }
 </style>
 """, unsafe_allow_html=True)
 
