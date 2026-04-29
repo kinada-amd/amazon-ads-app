@@ -44,6 +44,13 @@ div[data-testid="stSidebar"] div[role="radiogroup"] {
     flex-direction: row;
     gap: 20px;
 }
+.st-bh {
+    -webkit-box-orient: horizontal;
+    -webkit-box-direction: normal;
+    flex-direction: row;
+    margin-top: 0.75rem;
+    margin-bottom: -0.5rem;
+}
 </style>
 """, unsafe_allow_html=True)
 
