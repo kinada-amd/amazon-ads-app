@@ -13,8 +13,9 @@ st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap');
     
-    /* 右下のバッジとアイコンを完全に隠す */
+    /* 右下のバッジとアイコンを完全に隠す(最新版) */
     .stAppDeployButton, [data-testid="stStatusWidget"], footer, header, #MainMenu { visibility: hidden !important; display: none !important; }
+    div[data-testid="stDecoration"] { display: none !important; }
     
     html, body, [data-testid="stAppViewContainer"], .stApp {
         background-color: #FFFFFF !important;
@@ -32,12 +33,14 @@ st.markdown("""
 
 @st.cache_data(ttl=300)
 def load_data(url):
+    # HTTPからHTTPSへの修正を適用
     res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
+    res.raise_for_status() # エラーがあれば停止
     return io.BytesIO(res.content)
 
 try:
-    # データ読み込み
-    df_ads = pd.read_excel(load_data("http://gigaplus.makeshop.jp/aimedia/data/ads.xlsx"))
+    # 修正されたHTTPSプロトコルを使用
+    df_ads = pd.read_excel(load_data("https://gigaplus.makeshop.jp/aimedia/data/ads.xlsx"))
     
     # 前処理
     df_ads.columns = df_ads.columns.str.strip()
@@ -46,7 +49,6 @@ try:
 
     # サイドバー
     st.sidebar.title("Ads Analytics")
-    # 相互リンク
     st.sidebar.link_button("📊 売上分析アプリへ", "https://amazon-sales-app.streamlit.app/")
     st.sidebar.markdown("---")
     
@@ -58,6 +60,7 @@ try:
 
     # 当月データの抽出
     df_month = df_ads[df_ads['年月'] == target_month]
+    
     # タイプ別に集計
     type_summary = df_month.groupby('タイプ').agg({
         '広告費': 'sum',
@@ -77,7 +80,6 @@ try:
 
     with col1:
         st.subheader("タイプ別 広告費比率")
-        # 円グラフ
         fig_pie = px.pie(type_summary, values='広告費', names='タイプ', 
                          color='タイプ', color_discrete_sequence=['#FF9900', '#232F3E', '#37475A', '#D5D9D9'],
                          hole=0.4)
@@ -86,7 +88,6 @@ try:
 
     with col2:
         st.subheader("タイプ別 実績比較")
-        # 棒グラフ
         fig_bar = go.Figure()
         fig_bar.add_trace(go.Bar(name='広告費', x=type_summary['タイプ'], y=type_summary['広告費'], marker_color='#232F3E'))
         fig_bar.add_trace(go.Bar(name='広告売上', x=type_summary['タイプ'], y=type_summary['広告売上'], marker_color='#FF9900'))
@@ -117,4 +118,5 @@ try:
     )
 
 except Exception as e:
-    st.error(f"データの読み込みに失敗しました。URLまたはファイル形式を確認してください。")
+    st.error(f"データの読み込みに失敗しました。URL(HTTPS)またはファイル形式を確認してください。")
+    st.info(f"詳細エラー: {e}")
