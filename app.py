@@ -72,9 +72,8 @@ try:
     
     view_mode = st.sidebar.radio("表示モードを選択", ["通常モード", "比較モード"], index=0)
     
-    unit_mode = "月単位" 
-    if view_mode == "通常モード":
-        unit_mode = st.sidebar.radio("表示単位を選択", ["月単位", "年度単位"], index=0)
+    # 表示単位の選択を常に表示するように修正
+    unit_mode = st.sidebar.radio("表示単位を選択", ["月単位", "年度単位"], index=0)
     
     all_months = sorted(df_ads['年月'].dropna().unique(), reverse=True)
     all_years = sorted(df_ads['年度'].dropna().unique(), reverse=True)
@@ -155,12 +154,20 @@ try:
             )
 
     else:
-        month_a = st.sidebar.selectbox("比較期間 A", all_months, index=0)
-        month_b = st.sidebar.selectbox("比較期間 B", all_months, index=1 if len(all_months) > 1 else 0)
+        # 比較モードでの期間選択リストを単位に応じて切り替え
+        comp_list = all_months if unit_mode == "月単位" else all_years
+        month_a = st.sidebar.selectbox("比較期間 A", comp_list, index=0)
+        month_b = st.sidebar.selectbox("比較期間 B", comp_list, index=1 if len(comp_list) > 1 else 0)
         
         st.title(f"Comparison: {month_a} vs {month_b}")
-        df_a = df_ads[df_ads['年月'] == month_a].copy()
-        df_b = df_ads[df_ads['年月'] == month_b].copy()
+        
+        # フィルタリング条件を単位に応じて変更
+        if unit_mode == "月単位":
+            df_a = df_ads[df_ads['年月'] == month_a].copy()
+            df_b = df_ads[df_ads['年月'] == month_b].copy()
+        else:
+            df_a = df_ads[df_ads['年度'] == month_a].copy()
+            df_b = df_ads[df_ads['年度'] == month_b].copy()
         
         sp_a, sa_a = df_a['広告費'].sum(), df_a['広告売上'].sum()
         sp_b, sa_b = df_b['広告費'].sum(), df_b['広告売上'].sum()
@@ -178,14 +185,17 @@ try:
         st.subheader("広告総合実績比較")
         summary_a = df_a.agg({'インプレッション':'sum','クリック数':'sum','広告費':'sum','注文':'sum','広告売上':'sum'})
         summary_b = df_b.agg({'インプレッション':'sum','クリック数':'sum','広告費':'sum','注文':'sum','広告売上':'sum'})
-        comp_summary = pd.DataFrame([summary_a, summary_b], index=[month_a, month_b]).reset_index().rename(columns={'index': '年月'})
+        
+        # 表示名（年月 or 年度）を動的に設定
+        label = '年月' if unit_mode == "月単位" else '年度'
+        comp_summary = pd.DataFrame([summary_a, summary_b], index=[month_a, month_b]).reset_index().rename(columns={'index': label})
         comp_summary['CTR'] = (comp_summary['クリック数'] / comp_summary['インプレッション'] * 100).fillna(0)
         comp_summary['CPC'] = (comp_summary['広告費'] / comp_summary['クリック数']).fillna(0)
         comp_summary['ROAS'] = (comp_summary['広告売上'] / comp_summary['広告費'] * 100).fillna(0)
         comp_summary['CV率'] = (comp_summary['注文'] / comp_summary['クリック数'] * 100).fillna(0)
         comp_summary['ACOS'] = (comp_summary['広告費'] / comp_summary['広告売上'] * 100).fillna(0)
         st.dataframe(
-            comp_summary[['年月', 'インプレッション', 'クリック数', 'CTR', 'CPC', '広告費', '注文', '広告売上', 'ROAS', 'CV率', 'ACOS']].style.format({
+            comp_summary[[label, 'インプレッション', 'クリック数', 'CTR', 'CPC', '広告費', '注文', '広告売上', 'ROAS', 'CV率', 'ACOS']].style.format({
                 'インプレッション': '{:,.0f}', 'クリック数': '{:,.0f}', 'CTR': '{:.2f}%',
                 'CPC': '¥{:,.0f}', '広告費': '¥{:,.0f}', '注文': '{:,.0f}',
                 '広告売上': '¥{:,.0f}', 'ROAS': '{:,.0f}%', 'CV率': '{:.1f}%', 'ACOS': '{:.1f}%'
